@@ -1,0 +1,65 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract CryptoMarketSentiment {
+    struct Sentiment {
+        address user;
+        uint256 timestamp;
+        uint8 sentimentScore; // Sentiment score (0 to 100)
+    }
+
+    Sentiment[] public sentiments;
+    mapping(address => bool) public hasSubmittedSentiment;
+
+    // Events
+    event SentimentSubmitted(address indexed user, uint256 indexed timestamp, uint8 sentimentScore);
+
+    // Modifier to check if user has not already submitted sentiment
+    modifier notAlreadySubmitted() {
+        require(!hasSubmittedSentiment[msg.sender], "Sentiment already submitted");
+        _;
+    }
+
+    // Submit sentiment about the crypto market
+    function submitSentiment(uint8 sentimentScore) external notAlreadySubmitted {
+        require(sentimentScore >= 0 && sentimentScore <= 100, "Sentiment score must be between 0 and 100");
+
+        sentiments.push(Sentiment({
+            user: msg.sender,
+            timestamp: block.timestamp,
+            sentimentScore: sentimentScore
+        }));
+
+        hasSubmittedSentiment[msg.sender] = true;
+
+        emit SentimentSubmitted(msg.sender, block.timestamp, sentimentScore);
+    }
+
+    // Get total number of sentiments submitted
+    function getTotalSentiments() external view returns (uint256) {
+        return sentiments.length;
+    }
+
+    // Get sentiment details by index
+    function getSentiment(uint256 index) external view returns (address user, uint256 timestamp, uint8 sentimentScore) {
+        require(index < sentiments.length, "Sentiment index out of bounds");
+
+        Sentiment memory sentiment = sentiments[index];
+        return (sentiment.user, sentiment.timestamp, sentiment.sentimentScore);
+    }
+
+    // Calculate average sentiment score
+    function getAverageSentimentScore() external view returns (uint256) {
+        uint256 totalScore = 0;
+
+        for (uint256 i = 0; i < sentiments.length; i++) {
+            totalScore += sentiments[i].sentimentScore;
+        }
+
+        if (sentiments.length > 0) {
+            return totalScore / sentiments.length;
+        } else {
+            return 0;
+        }
+    }
+}
